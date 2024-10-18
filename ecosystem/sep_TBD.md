@@ -1,16 +1,21 @@
 ## Preamble
 
 ```
-CAP: To Be Assigned
-Title: Forward and Reverse Stock Splits
+SEP: To Be Assigned
+Title: Stock Splits
 Working Group:
-    Owner: Block Transfer <@blocktransfer>
+    Owner: _Block Transfer <@blocktransfer>_
     Authors: John Wooten <@JFWooten4>, [contributors] <@...>
 Status: Draft
 Created: 2021-07-29
-Discussion: <https://groups.google.com/g/stellar-dev/c/40u3UiqMXk0/m/p8-k2mhcAgAJ>
-Protocol version: 17
+Discussion: https://github.com/stellar/stellar-protocol/discussions/TBD
+Protocol version: TBD
 ```
+
+Discussion should be based on:
+- (main): 
+- (suppl): https://groups.google.com/g/stellar-dev/c/vSsf75cYi5Q/m/q-x1JilPGgAJ
+- (proTAR): consider community disussion around that if we end up migrating lemmy
 
 ## Simple Summary
 This CAP introduces forward and reverse asset split operations for issuers.
@@ -36,7 +41,12 @@ Scrapped-together manual implementations of stock splits require issuers to suff
 
 ## Specification
 
-### XDR changes
+### Forward Splits
+
+### Reverse Splits
+
+
+### ~~XDR changes~~ Standard Flow
 
 `ForwardSplit` and `ReverseSplit` called by issuing peer:
 
@@ -72,3 +82,8 @@ None
 
 ### Implementation
 Todo
+
+
+
+[^context]: harp on the prior non-action re wooten.link/liquidity n.8
+(and potential a real non-action)
