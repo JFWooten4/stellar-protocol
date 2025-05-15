@@ -88,7 +88,7 @@ The Stellar Ecosystem, like most software ecosystems in the world, continues to 
 our network's participants and to drive technology forward into new territory.
 
 Unlike Stellar's Core development (CAPs), Stellar's Ecosystem Proposals are intended to be a more dynamic way of
-introducing standards and protocols utilized in the ecosystem that are built on top of the Stellar Network. It attempts
+introducing standards and protocols utilized in the ecosystem that are built on top of the Stellar network. It attempts
 to take a more lightweight process for approval, and much of its process is inspired by the [IETF][ietf].
 
 Before contributing, consider the following:
@@ -99,7 +99,7 @@ Before contributing, consider the following:
 - Gather feedback from discussion on the dev mailing list and other forums, and utilize it to begin a draft proposal.
 - Follow the proposal process listed below. If you're having difficulty moving the proposal forward, talk to the buddy
   that's assigned the SEP; they'll often have guidance on how to move things forward, as well as feedback regarding
-  feasibility and how the proposal does or does not align with the Stellar Network's goals.
+  feasibility and how the proposal does or does not align with the Stellar network's goals.
 
 ## SEP Process
 
