@@ -1,0 +1,78 @@
+name: SEP Automation
+
+# SEP process automation runs in the base-repository context so it can draft,
+# lock, and comment on pull requests opened from forks. The checkout is pinned
+# explicitly to the trusted base commit; PR-head code is never checked out or
+# executed by this workflow.
+on:
+  pull_request_target:
+    types: [opened, reopened]
+    paths:
+      - "ecosystem/**"
+  workflow_dispatch:
+    inputs:
+      pr_number:
+        description: "Pull request number to process"
+        required: true
+        type: number
+
+permissions:
+  contents: read
+  issues: write
+  pull-requests: write
+
+concurrency:
+  group: sep-automation-${{ github.event.pull_request.number || inputs.pr_number }}
+  cancel-in-progress: false
+
+jobs:
+  sep-automation:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Load pull request context
+        id: context
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const pull_number = context.eventName === 'workflow_dispatch'
+              ? Number('${{ inputs.pr_number }}')
+              : context.payload.pull_request.number;
+            const { data: pr } = await github.rest.pulls.get({
+              ...context.repo,
+              pull_number,
+            });
+            core.setOutput('number', pr.number);
+            core.setOutput('node_id', pr.node_id);
+            core.setOutput('author', pr.user.login);
+            core.setOutput('base_sha', pr.base.sha);
+            core.setOutput('draft', String(pr.draft));
+            core.setOutput('default_branch', context.payload.repository.default_branch);
+
+      - name: Checkout trusted base commit
+        uses: actions/checkout@v5
+        with:
+          ref: ${{ steps.context.outputs.base_sha }}
+          persist-credentials: false
+
+      - name: Set up Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: "3.3"
+
+      - name: Validate bot scripts
+        run: |
+          ruby -c .github/actions/lib/github.rb
+          ruby -c .github/actions/lib/sep.rb
+          ruby -c .github/actions/sep_bot
+
+      - name: Apply SEP process automation
+        run: ruby .github/actions/sep_bot
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR_NUMBER: ${{ steps.context.outputs.number }}
+          PR_NODE_ID: ${{ steps.context.outputs.node_id }}
+          PR_AUTHOR: ${{ steps.context.outputs.author }}
+          PR_BASE_SHA: ${{ steps.context.outputs.base_sha }}
+          PR_DRAFT: ${{ steps.context.outputs.draft }}
+          DEFAULT_BRANCH: ${{ steps.context.outputs.default_branch }}

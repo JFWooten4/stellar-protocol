@@ -1,0 +1,96 @@
+#!/usr/bin/env ruby
+# frozen_string_literal: true
+
+require_relative "lib/github"
+require_relative "lib/sep"
+
+DISCUSSIONS_URL = "https://github.com/orgs/stellar/discussions/categories/stellar-ecosystem-proposals"
+
+repository = ENV.fetch("GITHUB_REPOSITORY")
+pr = SepPullRequest.new(
+  github: GitHub.new,
+  repository: repository,
+  number: ENV.fetch("PR_NUMBER"),
+  node_id: ENV.fetch("PR_NODE_ID"),
+  author: ENV.fetch("PR_AUTHOR"),
+  base_sha: ENV.fetch("PR_BASE_SHA"),
+  default_branch: ENV.fetch("DEFAULT_BRANCH"),
+  draft: ENV.fetch("PR_DRAFT", "false") == "true"
+)
+
+new_sep_files = pr.new_sep_files
+unless new_sep_files.empty?
+  if pr.guidance_posted?(SepPullRequest::NEW_SEP_MARKER)
+    puts "New SEP guidance already posted by GitHub Actions; nothing to do."
+    exit
+  end
+
+  body = [
+    SepPullRequest::NEW_SEP_MARKER,
+    "👋 Thanks for your contribution!",
+    "",
+    "It looks like this PR is proposing a **new SEP** — it adds the following new file(s) to the `ecosystem/` directory:",
+    "",
+    *new_sep_files.map { |file| "- `#{file.fetch("filename")}`" },
+    "",
+    "New SEP ideas start as a **discussion**, not a pull request, so I have **locked this PR and marked it as a draft** for now. The full process, including how SEP statuses work, is documented in the [SEP Contribution Process](#{pr.readme_url}#contribution-process).",
+    "",
+    "### How the SEP process works",
+    "",
+    "1. 💬 **Start a discussion.** Per [Pre-SEP (Initial Discussion)](#{pr.readme_url}#pre-sep-initial-discussion), discussion for new ideas happens on [GitHub Discussions](#{DISCUSSIONS_URL}). Please start a discussion there about your idea and proposal so people in the Stellar ecosystem can collaborate on it.",
+    "2. 🤝 **Collaborate.** Iterate on the proposal with the community in that discussion until it is ready to become a draft. See [Creating a SEP Draft](#{pr.readme_url}#creating-a-sep-draft).",
+    "3. ✅ **Request a merge.** Once the proposal has been collaborated on by other people in the Stellar ecosystem, mark this PR ready for review and then post in your GitHub Discussion asking for it to be merged. A maintainer will then unlock this PR, review it for formatting, **assign a SEP number**, and merge it.",
+    "",
+    "> ⚠️ **Never pre-allocate a SEP number in your PR.** Leave the SEP number as \"To Be Assigned\" — a maintainer will assign it on merge, as described in [Creating a SEP Draft](#{pr.readme_url}#creating-a-sep-draft).",
+    "",
+    "For details on what each SEP status (Draft, FCP, Active, Final, …) means, see [SEP Status Terms](#{pr.readme_url}#sep-status-terms).",
+    "",
+    "Thanks for helping improve the Stellar ecosystem! 🚀"
+  ].join("\n")
+
+  # Side effects happen before the marker comment so a partial failure can be
+  # retried safely. Locking an already-locked PR is idempotent.
+  pr.lock
+  pr.convert_to_draft
+  pr.comment(body)
+  puts "Posted new SEP guidance on PR ##{pr.number}."
+  exit
+end
+
+modified_sep_files = pr.modified_sep_files
+if modified_sep_files.empty?
+  puts "No new or modified SEP files found; nothing to do."
+  exit
+end
+
+if pr.guidance_posted?(SepPullRequest::MODIFICATION_MARKER)
+  puts "SEP modification guidance already posted by GitHub Actions; nothing to do."
+  exit
+end
+
+sep_infos = modified_sep_files.map { |file| pr.sep_info(file.fetch("filename")) }
+sep_lines = sep_infos.map do |sep|
+  parts = ["- [`#{sep[:filename]}`](#{pr.file_url(sep[:filename])})"]
+  parts << "— author(s): #{sep[:handles].map { |handle| "@#{handle}" }.join(", ")}" unless sep[:handles].empty?
+  parts << "— [existing discussion](#{sep[:discussion]})" if sep[:discussion]
+  parts.join(" ")
+end
+
+body = [
+  SepPullRequest::MODIFICATION_MARKER,
+  "👋 Thanks for your contribution!",
+  "",
+  "This PR proposes changes to the following existing SEP(s):",
+  "",
+  *sep_lines,
+  "",
+  "Per the [SEP Contribution Process](#{pr.readme_url}#contribution-process), changes to an existing SEP should start as a **discussion**, and should be advocated with the SEP's author(s) — the author maintains the proposal, so engaging them is an important part of getting a change adopted. If you haven't already, please raise your proposed change on the SEP's existing discussion linked above, or start one on the [GitHub discussion forum](#{DISCUSSIONS_URL}).",
+  "",
+  "I have **marked this PR as a draft** for now. Once the change has been discussed and is ready for a maintainer to review and merge, mark it as ready for review.",
+  "",
+  "Thanks for helping improve the Stellar ecosystem! 🚀"
+].join("\n")
+
+pr.convert_to_draft
+pr.comment(body)
+puts "Posted SEP modification guidance on PR ##{pr.number}."
